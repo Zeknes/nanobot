@@ -21,7 +21,14 @@ interface SendMediaCommand {
   fileName?: string;
 }
 
-type BridgeCommand = SendCommand | SendMediaCommand;
+interface SendReactionCommand {
+  type: 'send_reaction';
+  to: string;
+  message_id: string;
+  emoji: string;
+}
+
+type BridgeCommand = SendCommand | SendMediaCommand | SendReactionCommand;
 
 interface BridgeMessage {
   type: 'message' | 'status' | 'qr' | 'error';
@@ -121,6 +128,8 @@ export class BridgeServer {
       await this.wa.sendMessage(cmd.to, cmd.text);
     } else if (cmd.type === 'send_media') {
       await this.wa.sendMedia(cmd.to, cmd.filePath, cmd.mimetype, cmd.caption, cmd.fileName);
+    } else if (cmd.type === 'send_reaction') {
+      await this.wa.sendReaction(cmd.to, cmd.message_id, cmd.emoji);
     }
   }
 

@@ -29,6 +29,7 @@ class WhatsAppConfig(Base):
     bridge_url: str = "ws://localhost:3001"
     bridge_token: str = ""
     allow_from: list[str] = Field(default_factory=list)
+    react_emoji: str = "👍"  # Default reaction emoji for incoming messages
     group_policy: Literal["open", "mention"] = "open"  # "open" responds to all, "mention" only when @mentioned
 
 
@@ -195,6 +196,23 @@ class WhatsAppChannel(BaseChannel):
                 logger.error("Error sending WhatsApp media {}: {}", media_path, e)
                 raise
 
+    async def _add_reaction(self, chat_id: str, message_id: str, emoji: str) -> None:
+        """Add a reaction emoji to a message (non-blocking)."""
+        if not self._ws or not self._connected:
+            return
+
+        try:
+            payload = {
+                "type": "send_reaction",
+                "to": chat_id,
+                "message_id": message_id,
+                "emoji": emoji
+            }
+            await self._ws.send(json.dumps(payload, ensure_ascii=False))
+            logger.debug("Sent {} reaction to message {}", emoji, message_id)
+        except Exception as e:
+            logger.error("Error sending reaction: {}", e)
+
     async def _handle_bridge_message(self, raw: str) -> None:
         """Handle a message from the bridge."""
         try:
@@ -287,6 +305,10 @@ class WhatsAppChannel(BaseChannel):
                     "is_group": data.get("isGroup", False),
                 },
             )
+
+            # Add reaction to incoming message (like Feishu does)
+            if getattr(self.config, "react_emoji", None) and message_id:
+                await self._add_reaction(sender, message_id, self.config.react_emoji)
 
         elif msg_type == "status":
             # Connection status update
