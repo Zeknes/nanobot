@@ -1,8 +1,8 @@
 """Streaming renderer for CLI output.
 
-Hermes-style line-buffered streaming with ANSI borders.
-Uses a custom renderable (HermesPanel) to draw top and bottom borders 
-with straight lines, while omitting left and right borders and indents 
+Line-buffered streaming with ANSI borders.
+Uses a custom renderable (LinePanel) to draw top and bottom borders
+with straight lines, while omitting left and right borders and indents
 to prevent copy-paste issues in the terminal.
 """
 
@@ -30,10 +30,10 @@ def _make_console() -> Console:
     return Console(file=sys.stdout, force_terminal=sys.stdout.isatty())
 
 
-class HermesPanel:
+class LinePanel:
     """A custom panel that draws top and bottom straight borders,
     but omits vertical borders (left/right) and padding.
-    
+
     This ensures that when users select text in the terminal to copy, they do not
     copy vertical border characters, massive blocks of trailing spaces, or indentations.
     """
@@ -77,9 +77,9 @@ class HermesPanel:
         yield Segment(f"{'─' * width}\n", border_style)
 
 
-def _make_panel(renderable: RenderableType, width: int | None = None) -> HermesPanel:
-    """Wrap content in a Hermes-style panel for non-streaming static display."""
-    return HermesPanel(renderable, f"{__logo__} nanobot")
+def _make_panel(renderable: RenderableType, width: int | None = None) -> LinePanel:
+    """Wrap content in a line-bordered panel for non-streaming static display."""
+    return LinePanel(renderable, f"{__logo__} nanobot")
 
 
 class ThinkingSpinner:
@@ -118,8 +118,8 @@ class ThinkingSpinner:
 
 
 class StreamRenderer:
-    """Rich Live streaming with HermesPanel.
-    
+    """Rich Live streaming with LinePanel.
+
     Restores markdown rendering and stable Live updates while avoiding
     the copy-paste trailing space issue of traditional panels.
     """
@@ -137,7 +137,7 @@ class StreamRenderer:
     def _render(self) -> RenderableType:
         content = self._buf or ""
         renderable = Markdown(content) if self._md and content else Text(content)
-        return HermesPanel(renderable, f"{__logo__} nanobot")
+        return LinePanel(renderable, f"{__logo__} nanobot")
 
     def _start_spinner(self) -> None:
         if self._show_spinner:
